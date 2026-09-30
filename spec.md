@@ -9,23 +9,23 @@
 ## 2. Перелік сутностей та атрибути
 
 - **User**
-  - `id` (Primary Key)
+  - `id` (UUID, Primary Key)
   - `email` (string)
   - `password` (string)
   - `name` (string)
   - `created_at` (datetime)
 
 - **UserAddress**
-  - `id` (Primary Key)
-  - `user_id` (Foreign Key)
+  - `id` (UUID, Primary Key)
+  - `user_id` (UUID, Foreign Key)
   - `city` (string)
   - `delivery_service` (string)
   - `address_line` (string)
   - `is_default` (boolean)
 
 - **Product**
-  - `id` (Primary Key)
-  - `category_id` (Foreign Key)
+  - `id` (UUID, Primary Key)
+  - `category_id` (UUID, Foreign Key)
   - `name` (string)
   - `brand` (string)
   - `color` (string)
@@ -35,18 +35,18 @@
   - `stock_quantity` (int)
 
 - **Category**
-  - `id` (Primary Key)
+  - `id` (UUID, Primary Key)
   - `name` (string)
 
 - **Wishlist** (асоціативна сутність)
-  - `id` (Primary Key)
-  - `user_id` (Foreign Key)
-  - `product_id` (Foreign Key)
+  - `id` (UUID, Primary Key)
+  - `user_id` (UUID, Foreign Key)
+  - `product_id` (UUID, Foreign Key)
   - `in_stock` (boolean)
 
 - **Order**
-  - `id` (Primary Key)
-  - `user_id` (Foreign Key)
+  - `id` (UUID, Primary Key)
+  - `user_id` (UUID, Foreign Key)
   - `status` (string)
   - `delivery_service` (string)
   - `delivery_address` (string)
@@ -56,15 +56,15 @@
   - `created_at` (datetime)
 
 - **OrderItem** (асоціативна сутність)
-  - `id` (Primary Key)
-  - `order_id` (Foreign Key)
-  - `product_id` (Foreign Key)
+  - `id` (UUID, Primary Key)
+  - `order_id` (UUID, Foreign Key)
+  - `product_id` (UUID, Foreign Key)
   - `quantity` (int)
 
 - **Review**
-  - `id` (Primary Key)
-  - `user_id` (Foreign Key)
-  - `product_id` (Foreign Key)
+  - `id` (UUID, Primary Key)
+  - `user_id` (UUID, Foreign Key)
+  - `product_id` (UUID, Foreign Key)
   - `rating` (int)
   - `comment` (string)
   - `created_at` (datetime)
@@ -134,4 +134,5 @@
 
 ### 4.4. Технічні дрібниці
 
+- Усі ID (первинні та зовнішні ключі) строго використовують тип `UUID v4` для уніфікації моделі.
 - Дати й час (`created_at`) зберігаємо у форматі UTC, щоб не було плутанини з часовими поясами.

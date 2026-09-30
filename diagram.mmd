@@ -1,6 +1,6 @@
 erDiagram
     USER {
-        int id PK
+        uuid id PK
         string email
         string password
         string name
@@ -8,8 +8,8 @@ erDiagram
     }
 
     USER_ADDRESS {
-        int id PK
-        int user_id FK
+        uuid id PK
+        uuid user_id FK
         string city
         string delivery_service
         string address_line
@@ -17,8 +17,8 @@ erDiagram
     }
 
     PRODUCT {
-        int id PK
-        int category_id FK
+        uuid id PK
+        uuid category_id FK
         string name
         string brand
         string color
@@ -29,20 +29,20 @@ erDiagram
     }
 
     CATEGORY {
-        int id PK
+        uuid id PK
         string name
     }
 
     WISHLIST {
-        int id PK
-        int user_id FK
-        int product_id FK
+        uuid id PK
+        uuid user_id FK
+        uuid product_id FK
         boolean in_stock
     }
 
     ORDER {
-        int id PK
-        int user_id FK
+        uuid id PK
+        uuid user_id FK
         string status
         string delivery_service
         string delivery_address
@@ -53,16 +53,16 @@ erDiagram
     }
 
     ORDER_ITEM {
-        int id PK
-        int order_id FK
-        int product_id FK
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK
         int quantity
     }
 
     REVIEW {
-        int id PK
-        int user_id FK
-        int product_id FK
+        uuid id PK
+        uuid user_id FK
+        uuid product_id FK
         int rating
         string comment
         datetime created_at
