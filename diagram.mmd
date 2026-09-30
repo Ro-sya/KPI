@@ -18,7 +18,6 @@ erDiagram
 
     PRODUCT {
         uuid id PK
-        uuid category_id FK
         string name
         string brand
         string color
@@ -31,6 +30,13 @@ erDiagram
     CATEGORY {
         uuid id PK
         string name
+    }
+
+    PRODUCT_CATEGORY {
+        uuid id PK
+        uuid product_id FK
+        uuid category_id FK
+        boolean featured
     }
 
     WISHLIST {
@@ -73,7 +79,8 @@ erDiagram
     USER ||--o{ REVIEW : "writes"
     USER ||--o{ WISHLIST : "saves"
     PRODUCT ||--o{ WISHLIST : "in"
-    CATEGORY ||--o{ PRODUCT : "contains"
+    PRODUCT ||--o{ PRODUCT_CATEGORY : "classified_as"
+    CATEGORY ||--o{ PRODUCT_CATEGORY : "includes"
     PRODUCT ||--o{ REVIEW : "receives"
     ORDER ||--|{ ORDER_ITEM : "contains"
     PRODUCT ||--o{ ORDER_ITEM : "included_in"
