@@ -1,0 +1,87 @@
+erDiagram
+    USER {
+        uuid id PK
+        string email
+        string password
+        string name
+        datetime created_at
+    }
+
+    USER_ADDRESS {
+        uuid id PK
+        uuid user_id FK
+        string city
+        string delivery_service
+        string address_line
+        boolean is_default
+    }
+
+    PRODUCT {
+        uuid id PK
+        string name
+        string brand
+        string color
+        string description
+        string image_url
+        decimal price
+        int stock_quantity
+    }
+
+    CATEGORY {
+        uuid id PK
+        string name
+    }
+
+    PRODUCT_CATEGORY {
+        uuid id PK
+        uuid product_id FK
+        uuid category_id FK
+        boolean featured
+    }
+
+    WISHLIST {
+        uuid id PK
+        uuid user_id FK
+        uuid product_id FK
+        boolean in_stock
+    }
+
+    ORDER {
+        uuid id PK
+        uuid user_id FK
+        string status
+        string delivery_service
+        string delivery_address
+        string payment_method
+        string payment_status
+        decimal total_amount
+        datetime created_at
+    }
+
+    ORDER_ITEM {
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK
+        int quantity
+        decimal unit_price
+    }
+
+    REVIEW {
+        uuid id PK
+        uuid user_id FK
+        uuid product_id FK
+        int rating
+        string comment
+        datetime created_at
+    }
+
+    USER ||--o{ USER_ADDRESS : "has"
+    USER ||--o{ ORDER : "places"
+    USER ||--o{ REVIEW : "writes"
+    USER ||--o{ WISHLIST : "saves"
+    PRODUCT ||--o{ WISHLIST : "in"
+    PRODUCT ||--o{ PRODUCT_CATEGORY : "classified_as"
+    CATEGORY ||--o{ PRODUCT_CATEGORY : "includes"
+    PRODUCT ||--o{ REVIEW : "receives"
+    ORDER ||--|{ ORDER_ITEM : "contains"
+    PRODUCT ||--o{ ORDER_ITEM : "included_in"
