@@ -1,0 +1,44 @@
+sequenceDiagram
+    autonumber
+    actor User as Користувач
+    participant UI as Client UI
+    participant CS as Catalog Service
+    participant DB as Database
+
+    User->>UI: Обирає категорію товарів
+    activate UI
+    UI->>CS: Запит товарів за category_id
+    activate CS
+
+    CS->>DB: Знайти категорію за category_id
+    activate DB
+    DB-->>CS: Дані категорії
+    deactivate DB
+
+    alt Категорію знайдено
+        CS->>DB: Отримати товари через ProductCategory
+        activate DB
+        DB-->>CS: Список пов'язаних товарів
+        deactivate DB
+
+        loop Для кожного товару
+            CS->>DB: Отримати stock_quantity
+            activate DB
+            DB-->>CS: Значення залишку
+            deactivate DB
+            CS->>CS: Розрахувати in_stock
+        end
+
+        opt Є товари для відображення
+            CS->>CS: Підготувати список товарів і статусів наявності
+        end
+
+        CS-->>UI: Повернути список товарів та in_stock
+        UI-->>User: Відобразити товари обраної категорії
+    else Категорію не знайдено
+        CS-->>UI: Повернути помилку або порожній результат
+        UI-->>User: Показати повідомлення про відсутність категорії
+    end
+
+    deactivate CS
+    deactivate UI

@@ -1,0 +1,40 @@
+sequenceDiagram
+    autonumber
+    actor User as Користувач
+    participant UI as Client UI
+    participant CS as Catalog Service
+    participant DB as Database
+
+    User->>UI: Обирає категорію товарів
+    activate UI
+    UI->>CS: Запит товарів за category_id
+    activate CS
+
+    CS->>DB: Перевірити існування категорії
+    activate DB
+    DB-->>CS: Категорію знайдено
+    deactivate DB
+
+    CS->>DB: Отримати товари через ProductCategory
+    activate DB
+    DB-->>CS: Порожній масив товарів []
+    deactivate DB
+
+    alt Категорія існує, але товарів немає
+        opt Перевірити відсутність товарів
+            CS->>CS: Підтвердити порожній результат
+        end
+
+        loop Поки триває формування відповіді
+            CS->>CS: Підготувати порожній масив []
+        end
+
+        CS-->>UI: Повернути успішну відповідь з items = []
+        UI-->>User: Відобразити «У цій категорії поки немає товарів»
+    else Категорію не знайдено
+        CS-->>UI: Повернути помилку або статус 404
+        UI-->>User: Відобразити «Категорію не знайдено»
+    end
+
+    deactivate CS
+    deactivate UI
