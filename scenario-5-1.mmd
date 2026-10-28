@@ -1,0 +1,60 @@
+sequenceDiagram
+    autonumber
+    actor Buyer as Покупець
+    participant UI as Client UI
+    participant OS as Order Service
+    participant DB as Database
+    participant PG as Payment Gateway
+
+    Buyer->>UI: Обирає замовлення та натискає «Скасувати»
+    activate UI
+    UI->>OS: Запит на скасування order_id
+    activate OS
+
+    OS->>DB: Отримати замовлення та його статус
+    activate DB
+    DB-->>OS: Дані замовлення зі статусом paid
+    deactivate DB
+
+    alt Статус замовлення paid
+        OS->>DB: BEGIN TRANSACTION
+        activate DB
+        OS->>DB: Змінити статус на cancelled
+        OS->>DB: COMMIT TRANSACTION
+        DB-->>OS: Статус cancelled збережено
+        deactivate DB
+
+        opt Замовлення має успішний платіж
+            OS->>PG: Запит на refund(order_id, amount)
+            activate PG
+            PG-->>OS: Результат обробки повернення
+            deactivate PG
+
+            alt Повернення коштів успішне
+                OS->>DB: Оновити статус на refunded
+                activate DB
+                DB-->>OS: Статус refunded збережено
+                deactivate DB
+                OS-->>UI: Скасування та повернення коштів успішні
+            else Повернення коштів не виконано
+                OS-->>UI: Замовлення скасовано, refund не завершено
+            end
+        end
+
+        loop Поки потрібне підтвердження результату refund
+            opt Статус повернення ще не підтверджений
+                OS->>PG: Запитати статус refund
+                activate PG
+                PG-->>OS: Поточний статус refund
+                deactivate PG
+            end
+        end
+
+        UI-->>Buyer: Показати результат скасування
+    else Статус замовлення не дозволяє скасування
+        OS-->>UI: Відмова: скасування недоступне
+        UI-->>Buyer: Показати причину відмови
+    end
+
+    deactivate OS
+    deactivate UI
