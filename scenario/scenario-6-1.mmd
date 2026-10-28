@@ -1,0 +1,49 @@
+sequenceDiagram
+    autonumber
+    actor Buyer as Покупець
+    participant UI as Client UI
+    participant US as User Service
+    participant WS as Wishlist Service
+    participant DB as Database
+
+    Buyer->>UI: Натискає «Видалити акаунт»
+    activate UI
+    UI->>US: Запит на видалення акаунта
+    activate US
+
+    US->>DB: Перевірити існування користувача
+    activate DB
+    DB-->>US: Дані користувача знайдено
+    deactivate DB
+
+    alt Користувач існує та може видалити акаунт
+        US->>WS: Видалити Wishlist користувача
+        activate WS
+        WS->>DB: Видалити записи Wishlist за user_id
+        activate DB
+        DB-->>WS: Записи Wishlist видалено
+        deactivate DB
+        WS-->>US: Wishlist успішно очищено
+        deactivate WS
+
+        opt Збереження історії замовлень
+            US->>DB: Переконатися, що записи Order збережені
+            activate DB
+            DB-->>US: Історію замовлень збережено
+            deactivate DB
+        end
+
+        US->>DB: Видалити запис User
+        activate DB
+        DB-->>US: Запис User видалено
+        deactivate DB
+
+        US-->>UI: Підтвердити видалення акаунта
+        UI-->>Buyer: Показати повідомлення про успішне видалення
+    else Користувача не знайдено або видалення неможливе
+        US-->>UI: Повернути помилку видалення
+        UI-->>Buyer: Показати повідомлення про помилку
+    end
+
+    deactivate US
+    deactivate UI
