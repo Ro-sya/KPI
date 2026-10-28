@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    actor Buyer as Покупець
+    participant UI as Client UI
+    participant OS as Order Service
+    participant DB as Database
+
+    Buyer->>UI: Натискає «Скасувати замовлення»
+    activate UI
+    UI->>OS: Надіслати запит на скасування order_id
+    activate OS
+
+    OS->>DB: Отримати статус замовлення
+    activate DB
+    DB-->>OS: Повернути статус замовлення
+    deactivate DB
+
+    alt Статус shipped або delivered
+        OS->>OS: Заборонити скасування
+        opt Сформувати детальну причину відмови
+            OS->>OS: Причина: замовлення вже відправлено або доставлено
+        end
+        OS-->>UI: Помилка: скасування недоступне
+        UI-->>Buyer: Показати повідомлення про відмову
+    else Статус дозволяє скасування
+        OS->>DB: Повторно перевірити статус перед зміною
+        activate DB
+        DB-->>OS: Повернути актуальний статус
+        deactivate DB
+
+        loop Поки статус не перевірено
+            OS->>DB: Повторити перевірку статусу
+            activate DB
+            DB-->>OS: Повернути актуальний статус
+            deactivate DB
+        end
+
+        OS-->>UI: Передати результат перевірки
+        UI-->>Buyer: Показати подальші доступні дії
+    end
+
+    deactivate OS
+    deactivate UI
