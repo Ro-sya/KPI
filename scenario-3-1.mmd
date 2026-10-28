@@ -1,0 +1,52 @@
+sequenceDiagram
+    autonumber
+    actor Buyer as Покупець
+    participant UI as Client UI
+    participant OS as Order Service
+    participant IS as Inventory Service
+    participant DB as Database
+
+    Buyer->>UI: Натискає «Оформити замовлення»
+    activate UI
+    UI->>OS: Надсилає кошик та дані замовлення
+    activate OS
+
+    OS->>IS: Перевірити залишки товарів
+    activate IS
+
+    loop Для кожної позиції кошика
+        IS->>DB: Отримати stock_quantity
+        activate DB
+        DB-->>IS: Поточний залишок
+        deactivate DB
+        IS->>IS: Перевірити достатність залишку
+    end
+
+    alt Усі товари є в наявності
+        IS-->>OS: Валідація успішна
+    else Недостатньо товару хоча б для однієї позиції
+        IS-->>OS: Помилка: недостатньо залишків
+    end
+    deactivate IS
+
+    alt Залишків достатньо
+        opt Кошик містить товари
+            OS->>DB: BEGIN TRANSACTION
+            activate DB
+            OS->>DB: Зафіксувати ціну кожної позиції
+            OS->>DB: Створити замовлення (new/unpaid)
+            OS->>DB: Зменшити stock_quantity
+            OS->>DB: COMMIT TRANSACTION
+            DB-->>OS: Транзакцію успішно завершено
+            deactivate DB
+        end
+
+        OS-->>UI: Замовлення створено (new/unpaid)
+        UI-->>Buyer: Показати підтвердження замовлення
+    else Залишків недостатньо
+        OS-->>UI: Повернути помилку наявності
+        UI-->>Buyer: Показати повідомлення про нестачу товару
+    end
+
+    deactivate OS
+    deactivate UI
