@@ -1,0 +1,50 @@
+sequenceDiagram
+    autonumber
+    actor Buyer as Покупець
+    participant UI as Client UI
+    participant OS as Order Service
+    participant IS as Inventory Service
+    participant DB as Database
+
+    Buyer->>UI: Натискає «Оформити замовлення»
+    activate UI
+    UI->>OS: Передати кошик
+    activate OS
+
+    OS->>DB: BEGIN TRANSACTION
+    activate DB
+
+    OS->>IS: Перевірити залишки товарів
+    activate IS
+
+    loop Для кожної позиції кошика
+        IS->>DB: Заблокувати та прочитати Product
+        DB-->>IS: stock_quantity та unit_price
+        IS->>IS: Порівняти quantity зі stock_quantity
+    end
+
+    alt Усі товари доступні
+        IS-->>OS: Перевірку пройдено
+    else Хоча б один товар має quantity > stock_quantity
+        IS-->>OS: Недостатньо залишків
+    end
+    deactivate IS
+
+    alt Залишків достатньо
+        OS->>DB: Зафіксувати ціни та дані доставки
+        OS->>DB: Створити Order і OrderItem
+        OS->>DB: Зменшити stock_quantity
+        OS->>DB: COMMIT TRANSACTION
+        DB-->>OS: Успішне завершення
+        OS-->>UI: Замовлення створено
+        UI-->>Buyer: Показати підтвердження
+    else Залишків недостатньо
+        OS->>DB: ROLLBACK TRANSACTION
+        DB-->>OS: Зміни скасовано
+        OS-->>UI: Помилка: недостатньо товару
+        UI-->>Buyer: Показати повідомлення про помилку
+    end
+
+    deactivate DB
+    deactivate OS
+    deactivate UI
