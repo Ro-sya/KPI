@@ -1,0 +1,70 @@
+@startuml
+title Activity Diagram — Скасування замовлення
+
+|Покупець|
+start
+:Обрати замовлення;
+:Натиснути «Скасувати замовлення»;
+:Надіслати order_id;
+
+|Order Service|
+:Отримати запит;
+:Зчитати поточний статус ORDER;
+
+if (Статус дозволяє скасування?) then (Так)
+  :Перевірити належність\nзамовлення користувачу;
+
+  :ORDER.status = cancelled;
+
+  fork
+    :Перевірити payment_status;
+
+    if (payment_status == paid?) then (Так)
+      |Payment Gateway|
+      :Отримати запит refund;
+      :Виконати повернення коштів;
+      :Надіслати результат refund;
+
+      |Order Service|
+      :Отримати результат refund;
+
+      while (Повернення ще очікує підтвердження?) is (Так)
+        :Надіслати запит актуального статусу refund;
+
+        |Payment Gateway|
+        :Повернути поточний статус refund;
+
+        |Order Service|
+        :Отримати поточний статус;
+      endwhile (Ні)
+
+      if (Повернення успішне?) then (Так)
+        :ORDER.payment_status = refunded;
+      else (Ні)
+        :ORDER.payment_status = failed;
+        :Передати запис менеджеру\nна ручну обробку;
+      endif
+    else (Ні)
+      :Пропустити повернення коштів;
+    endif
+
+  fork again
+    :Для кожного ORDER_ITEM;
+    :Збільшити PRODUCT.stock_quantity\nна ORDER_ITEM.quantity;
+    :Оновити WISHLIST.in_stock\nдля відповідних товарів;
+  end fork
+
+  :Сформувати фінальне повідомлення;
+
+  |Покупець|
+  :Отримати підтвердження\nскасування замовлення;
+
+else (Ні)
+  :Сформувати повідомлення\nпро відмову;
+
+  |Покупець|
+  :Отримати повідомлення\nпро неможливість скасування;
+endif
+
+stop
+@enduml
