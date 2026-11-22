@@ -1,0 +1,78 @@
+@startuml
+title Скасування замовлення — Activity-діаграма
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam swimlaneTitleFontStyle bold
+
+|Покупець|
+start
+:Обирає замовлення та натискає\n«Скасувати замовлення»;
+:Надсилає запит на скасування (order_id);
+
+|Order Service|
+:Отримує запит;
+:Зчитує ORDER.status\nта перевіряє належність замовлення;
+
+if (status in {shipped, delivered, cancelled}?) then (так)
+  :Відхиляє запит (REQ-ORD-04);
+  |Покупець|
+  :Отримує повідомлення про причину відмови;
+  stop
+else (ні: new / pending_payment / paid)
+  |Order Service|
+  :ORDER.status = cancelled (REQ-ORD-03);
+endif
+
+fork
+  |Order Service|
+  :Перевіряє ORDER.payment_status;
+  if (payment_status == paid?) then (так)
+    :Надсилає запит refund;
+    |Payment Gateway|
+    :Приймає запит, виконує транзакцію;
+    repeat
+      :Повертає статус refund;
+      |Order Service|
+      backward:Запит актуального статусу refund;
+    repeat while (Статус очікує підтвердження банку\nта ліміт спроб/часу не вичерпано?) is (так) not (ні)
+    if (Фінальний статус refund?) then (успішно)
+      :ORDER.payment_status = refunded;
+    elseif (відхилено) then (відхилено)
+      :ORDER.payment_status = failed;
+      :Передає запис менеджеру\nна ручну обробку;
+    else (немає фінального статусу\nу встановлений час / кількість спроб)
+      :Припиняє опитування;
+      :Передає операцію на ручну обробку;
+    endif
+  else (ні: new / pending_payment)
+    :Фінансові дії пропускаються;
+  endif
+fork again
+  |Order Service|
+  :Проходить по всіх позиціях ORDER_ITEM;
+  :PRODUCT.stock_quantity += ORDER_ITEM.quantity;
+  :WISHLIST.in_stock = (stock_quantity > 0)\nдля всіх відповідних користувачів;
+  if (Помилка оновлення / синхронізації?) then (так)
+    :Повторна спроба операції;
+    if (Повторна спроба невдала?) then (так)
+      :Фіксує помилку для подальшої обробки;
+      :Складську синхронізацію\nне вважає завершеною;
+    else (ні)
+    endif
+  else (ні)
+  endif
+end fork
+
+|Order Service|
+:Формує кінцеве повідомлення за результатами обох гілок;
+if (Повернення коштів\nуспішне?) then (так)
+  :Підтвердження скасування\nта повернення коштів;
+else (ні / не завершено / ручна обробка)
+  :Повідомлення про скасування\nта поточний стан повернення коштів;
+endif
+
+|Покупець|
+:Отримує кінцеве повідомлення;
+stop
+@enduml
