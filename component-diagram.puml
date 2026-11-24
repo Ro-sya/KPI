@@ -1,0 +1,188 @@
+@startuml
+title Архітектура компонентів — Онлайн магазин канцтоварів
+
+left to right direction
+
+skinparam shadowing false
+skinparam componentStyle uml2
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+skinparam component {
+    BackgroundColor #EAF2F8
+    BorderColor #2874A6
+    FontColor #154360
+}
+
+skinparam interface {
+    BackgroundColor #FFF2CC
+    BorderColor #C9A227
+}
+
+skinparam database {
+    BackgroundColor #E8F8F5
+    BorderColor #148F77
+}
+
+skinparam package {
+    BackgroundColor #FFFFFF
+    BorderColor #7F8C8D
+}
+
+' =========================
+' SYSTEM BOUNDARY
+' =========================
+
+package "Online Stationery Store" {
+
+    ' =========================
+    ' UI
+    ' =========================
+
+    package "UI" {
+        component "Web Storefront" as Web
+        component "Admin Panel" as Admin
+    }
+
+    ' =========================
+    ' API / BACKEND
+    ' =========================
+
+    package "API / Backend" {
+        component "API Gateway" as Gateway
+    }
+
+    ' =========================
+    ' BUSINESS SERVICES
+    ' =========================
+
+    package "Services" {
+
+        component "Auth & User Service" as Auth
+        component "Catalog & Review Service" as Catalog
+        component "Cart & Order Service" as Order
+        component "Payment & Notification Service" as Payment
+    }
+
+    ' =========================
+    ' DATA ACCESS
+    ' =========================
+
+    package "Data Access" {
+
+        component "User Repository" as UserRepo
+        component "Catalog Repository" as CatalogRepo
+        component "Order Repository" as OrderRepo
+        component "Cache Access" as CacheAccess
+        component "Object Storage Access" as ObjectAccess
+    }
+
+    ' =========================
+    ' DATABASES
+    ' =========================
+
+    package "Databases" {
+
+        database "PostgreSQL" as PostgreSQL
+        database "Redis" as Redis
+        database "Object Storage" as ObjectStorage
+    }
+
+    ' =========================
+    ' PROVIDED INTERFACES
+    ' =========================
+
+    Auth -() IAuthAPI
+    Catalog -() ICatalogAPI
+    Order -() IOrderAPI
+    Payment -() IPaymentNotifyAPI
+    Payment -() IPaymentWebhook
+
+    ' =========================
+    ' REQUIRED INTERFACES
+    ' =========================
+
+    Gateway ..> IAuthAPI : requires
+    Gateway ..> ICatalogAPI : requires
+    Gateway ..> IOrderAPI : requires
+
+    ' =========================
+    ' UI DEPENDENCIES
+    ' =========================
+
+    Web --> Gateway : HTTPS / REST
+    Admin --> Gateway : HTTPS / REST
+
+    ' =========================
+    ' SERVICE DEPENDENCIES
+    ' =========================
+
+    Auth --> UserRepo
+    Catalog --> CatalogRepo
+    Order --> OrderRepo
+
+    Order --> Catalog : Check product availability
+    Payment --> Order : Get order / update status
+
+    ' =========================
+    ' DATA ACCESS DEPENDENCIES
+    ' =========================
+
+    UserRepo --> PostgreSQL
+    CatalogRepo --> PostgreSQL
+    OrderRepo --> PostgreSQL
+
+    UserRepo --> CacheAccess
+    CatalogRepo --> CacheAccess
+    OrderRepo --> CacheAccess
+
+    CacheAccess --> Redis
+
+    CatalogRepo --> ObjectAccess
+    ObjectAccess --> ObjectStorage
+}
+
+' =========================
+' EXTERNAL SYSTEMS
+' =========================
+
+package "External Systems" {
+
+    component "Payment Gateway\nLiqPay / Stripe" as PaymentGateway
+    component "Delivery API\nНова Пошта / Укрпошта" as DeliveryAPI
+    component "SMS / Email Provider" as NotificationProvider
+    component "Google OAuth\nIdentity Provider" as OAuthProvider
+}
+
+' =========================
+' EXTERNAL INTERFACES
+' =========================
+
+interface IPaymentAPI
+interface IDeliveryAPI
+interface INotificationAPI
+interface IOAuth2
+
+' =========================
+' EXTERNAL INTEGRATIONS
+' =========================
+
+Payment ..> IPaymentAPI : requires
+IPaymentAPI -- PaymentGateway
+
+Order ..> IDeliveryAPI : requires
+IDeliveryAPI -- DeliveryAPI
+
+Payment ..> INotificationAPI : requires
+INotificationAPI -- NotificationProvider
+
+Auth ..> IOAuth2 : requires
+IOAuth2 -- OAuthProvider
+
+' =========================
+' PAYMENT WEBHOOK
+' =========================
+
+PaymentGateway --> IPaymentWebhook : Payment callback
+
+@enduml
