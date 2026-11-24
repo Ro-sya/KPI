@@ -60,6 +60,8 @@ package "Online Stationery Store" {
 
         component "Auth & User Service" as Auth
         component "Catalog & Review Service" as Catalog
+        component "Inventory Service" as Inventory
+        component "Wishlist Service" as Wishlist
         component "Cart & Order Service" as Order
         component "Payment & Notification Service" as Payment
     }
@@ -72,7 +74,9 @@ package "Online Stationery Store" {
 
         component "User Repository" as UserRepo
         component "Catalog Repository" as CatalogRepo
+        component "Wishlist Repository" as WishlistRepo
         component "Order Repository" as OrderRepo
+
         component "Cache Access" as CacheAccess
         component "Object Storage Access" as ObjectAccess
     }
@@ -89,22 +93,46 @@ package "Online Stationery Store" {
     }
 
     ' =========================
-    ' PROVIDED INTERFACES
+    ' INTERNAL PROVIDED INTERFACES
     ' =========================
 
     Auth -() IAuthAPI
     Catalog -() ICatalogAPI
+    Inventory -() IInventoryAPI
+    Wishlist -() IWishlistAPI
     Order -() IOrderAPI
     Payment -() IPaymentNotifyAPI
     Payment -() IPaymentWebhook
 
     ' =========================
-    ' REQUIRED INTERFACES
+    ' INTERNAL REQUIRED INTERFACES
     ' =========================
 
     Gateway ..> IAuthAPI : requires
     Gateway ..> ICatalogAPI : requires
+    Gateway ..> IInventoryAPI : requires
+    Gateway ..> IWishlistAPI : requires
     Gateway ..> IOrderAPI : requires
+    Gateway ..> IPaymentNotifyAPI : requires
+
+    ' =========================
+    ' REPOSITORY PROVIDED INTERFACES
+    ' =========================
+
+    UserRepo -() IUserRepository
+    CatalogRepo -() ICatalogRepository
+    WishlistRepo -() IWishlistRepository
+    OrderRepo -() IOrderRepository
+
+    ' =========================
+    ' REPOSITORY REQUIRED INTERFACES
+    ' =========================
+
+    Auth ..> IUserRepository : requires
+    Wishlist ..> IWishlistRepository : requires
+    Catalog ..> ICatalogRepository : requires
+    Inventory ..> ICatalogRepository : requires
+    Order ..> IOrderRepository : requires
 
     ' =========================
     ' UI DEPENDENCIES
@@ -117,12 +145,9 @@ package "Online Stationery Store" {
     ' SERVICE DEPENDENCIES
     ' =========================
 
-    Auth --> UserRepo
-    Catalog --> CatalogRepo
-    Order --> OrderRepo
+    Order ..> IInventoryAPI : Check stock availability
 
-    Order --> Catalog : Check product availability
-    Payment --> Order : Get order / update status
+    Payment ..> IOrderAPI : Get order / update status
 
     ' =========================
     ' DATA ACCESS DEPENDENCIES
@@ -130,10 +155,12 @@ package "Online Stationery Store" {
 
     UserRepo --> PostgreSQL
     CatalogRepo --> PostgreSQL
+    WishlistRepo --> PostgreSQL
     OrderRepo --> PostgreSQL
 
     UserRepo --> CacheAccess
     CatalogRepo --> CacheAccess
+    WishlistRepo --> CacheAccess
     OrderRepo --> CacheAccess
 
     CacheAccess --> Redis
@@ -151,33 +178,27 @@ package "External Systems" {
     component "Payment Gateway\nLiqPay / Stripe" as PaymentGateway
     component "Delivery API\nНова Пошта / Укрпошта" as DeliveryAPI
     component "SMS / Email Provider" as NotificationProvider
-    component "Google OAuth\nIdentity Provider" as OAuthProvider
 }
 
 ' =========================
-' EXTERNAL INTERFACES
+' EXTERNAL PROVIDED INTERFACES
 ' =========================
 
 interface IPaymentAPI
 interface IDeliveryAPI
 interface INotificationAPI
-interface IOAuth2
+
+PaymentGateway -() IPaymentAPI
+DeliveryAPI -() IDeliveryAPI
+NotificationProvider -() INotificationAPI
 
 ' =========================
-' EXTERNAL INTEGRATIONS
+' EXTERNAL REQUIRED INTERFACES
 ' =========================
 
 Payment ..> IPaymentAPI : requires
-IPaymentAPI -- PaymentGateway
-
 Order ..> IDeliveryAPI : requires
-IDeliveryAPI -- DeliveryAPI
-
 Payment ..> INotificationAPI : requires
-INotificationAPI -- NotificationProvider
-
-Auth ..> IOAuth2 : requires
-IOAuth2 -- OAuthProvider
 
 ' =========================
 ' PAYMENT WEBHOOK
